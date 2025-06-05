@@ -1,0 +1,54 @@
+.custom-delivery-settings .settings-container {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.custom-delivery-settings .settings-left {
+    flex: 2;
+    max-width: 600px;
+}
+
+.custom-delivery-settings .settings-right {
+    flex: 1;
+    max-width: 400px;
+}
+
+.custom-delivery-settings .settings-block {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.custom-delivery-settings .form-table th {
+    width: 150px;
+}
+
+.custom-delivery-settings .moysklad-service-id {
+    cursor: pointer;
+    color: #0073aa;
+    text-decoration: underline;
+}
+
+.custom-delivery-settings .moysklad-service-id:hover {
+    color: #005177;
+}
+
+.custom-delivery-settings .delivery-method {
+    background: #f9f9f9;
+}
+
+.custom-delivery-settings .button.remove-interval,
+.custom-delivery-settings .button.remove-method {
+    background: #d63638;
+    color: #fff;
+    border-color: #d63638;
+}
+
+.custom-delivery-settings .button.remove-interval:hover,
+.custom-delivery-settings .button.remove-method:hover {
+    background: #b32d2e;
+    border-color: #b32d2e;
+}

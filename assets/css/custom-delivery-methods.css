@@ -1,0 +1,10 @@
+.woocommerce-shipping-methods li {
+    display: flex;
+    flex-direction: column;
+}
+.woocommerce-shipping-methods .shipping-datetime {
+    order: 1;
+}
+.woocommerce-shipping-methods .shipping-description {
+    order: 2;
+}
