@@ -79,44 +79,41 @@ class Custom_Delivery_Settings {
 
         error_log('Custom Delivery: Attempting to fetch MoySklad services via AJAX');
 
-        // Проверка наличия плагина WooMS
-        if (!defined('WOOMS_VERSION')) {
-            error_log('Custom Delivery: WooMS plugin not detected (WOOMS_VERSION not defined)');
+        // Проверка активности плагина WooMS
+        include_once ABSPATH . 'wp-admin/includes/plugin.php';
+        $wooms_plugin = 'wooms/wooms.php'; // Предполагаемый путь к плагину WooMS
+        if (!is_plugin_active($wooms_plugin) && !function_exists('WooMS\request')) {
+            error_log('Custom Delivery: WooMS plugin not active or WooMS\request function not found');
             wp_send_json_error(['message' => __('Плагин WooMS не установлен или не активен', 'custom-delivery-methods')]);
         }
 
-        // Проверка автозагрузки класса
-        if (!class_exists('WooMS\API')) {
-            error_log('Custom Delivery: WooMS\API class not found. Attempting to include manually');
-            // Попытка ручного подключения
-            $wooms_api_file = WP_PLUGIN_DIR . '/wooms/includes/class-api.php';
-            if (file_exists($wooms_api_file)) {
-                require_once $wooms_api_file;
-            } else {
-                error_log('Custom Delivery: WooMS API file not found at ' . $wooms_api_file);
-                wp_send_json_error(['message' => __('Не удалось загрузить API WooMS', 'custom-delivery-methods')]);
-            }
+        // Проверка наличия функции WooMS\request
+        if (!function_exists('WooMS\request')) {
+            error_log('Custom Delivery: WooMS\request function not found');
+            wp_send_json_error(['message' => __('Функция WooMS\request не найдена', 'custom-delivery-methods')]);
         }
 
-        if (!class_exists('WooMS\API')) {
-            error_log('Custom Delivery: WooMS\API class still not available after manual include');
-            wp_send_json_error(['message' => __('API WooMS недоступен', 'custom-delivery-methods')]);
-        }
-
-        error_log('Custom Delivery: WooMS\API class loaded successfully');
+        error_log('Custom Delivery: WooMS\request function detected');
 
         // Запрос к МойСклад
         try {
-            $response = WooMS\API::request('entity/service');
-            error_log('Custom Delivery: MoySklad API response: ' . print_r($response, true));
-        } catch (Exception $e) {
-            error_log('Custom Delivery: MoySklad API request failed: ' . $e->getMessage());
-            wp_send_json_error(['message' => __('Ошибка подключения к МойСклад: ', 'custom-delivery-methods') . $e->getMessage()]);
-        }
+            $api_url = 'https://api.moysklad.ru/api/remap/1.2/';
+            $path = 'entity/service';
+            $full_url = $api_url . $path;
+            error_log('Custom Delivery: Requesting MoySklad services from ' . $full_url);
 
-        if (is_wp_error($response)) {
-            error_log('Custom Delivery: MoySklad API returned WP_Error: ' . $response->get_error_message());
-            wp_send_json_error(['message' => __('Ошибка подключения к МойСклад', 'custom-delivery-methods')]);
+            $response = \WooMS\request($full_url);
+
+            if (is_array($response) && !isset($response['errors'])) {
+                error_log('Custom Delivery: MoySklad services fetched successfully');
+            } else {
+                $error_message = isset($response['errors']) ? $response['errors'][0]['error'] : 'Ошибка запроса к МойСклад';
+                error_log('Custom Delivery: MoySklad error: ' . $error_message);
+                wp_send_json_error(['message' => __('Ошибка запроса к МойСклад: ', 'custom-delivery-methods') . $error_message]);
+            }
+        } catch (Exception $e) {
+            error_log('Custom Delivery: Exception during MoySklad request: ' . $e->getMessage());
+            wp_send_json_error(['message' => __('Ошибка подключения к МойСклад: ', 'custom-delivery-methods') . $e->getMessage()]);
         }
 
         $services = $response['rows'] ?? [];
