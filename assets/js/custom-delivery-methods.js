@@ -1,51 +1,58 @@
 jQuery(document).ready(function($) {
-    // Управление видимостью полей даты/времени
-    function toggleDatetimeFields() {
+    function toggleDeliveryDatetime() {
         $('.shipping-datetime').hide();
-        var chosenMethod = $('input[name="shipping_method[0]"]:checked').val();
-        if (chosenMethod) {
-            var methodId = chosenMethod.replace(/:/g, '\\:');
-            var $datetime = $('[data-method-id="' + methodId + '"]');
-            if ($datetime.length) {
-                $datetime.show();
-                console.log('Showing datetime for method: ' + methodId);
-            } else {
-                console.log('No datetime found for method: ' + methodId);
-            }
+        var selectedMethod = $('input[name="shipping_method[0]"]:checked').val();
+        if (selectedMethod) {
+            $('.shipping-datetime[data-method-id="' + selectedMethod + '"]').show();
         }
     }
 
-    // Перемещение полей даты/времени перед описанием
-    function moveDatetimeFields() {
-        $('.shipping-datetime').each(function() {
-            var $this = $(this);
-            var $parent = $this.closest('li');
-            var $description = $parent.find('.shipping-description');
-            if ($description.length) {
-                $this.insertBefore($description);
-                console.log('Moved datetime before description for method: ' + $this.data('method-id'));
-            } else {
-                console.log('No description found for method: ' + $this.data('method-id') + ', parent classes: ' + ($parent.attr('class') || 'no-class'));
+    function updateDeliveryTimeOptions(methodId, $dateInput) {
+        var $timeSelect = $('#custom_delivery_time_' + methodId + ', #pickup_time_' + methodId);
+        $timeSelect.empty().append('<option value="">' + customDeliveryMethods.i18n.select_time + '</option>');
+
+        if (!$dateInput.val()) {
+            return;
+        }
+
+        $.ajax({
+            url: customDeliveryMethods.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'get_delivery_time_options',
+                method_id: methodId,
+                date: $dateInput.val(),
+                is_weekend: isWeekend($dateInput.val()),
+                _wpnonce: customDeliveryMethods.nonce,
+            },
+            success: function(response) {
+                if (response.success) {
+                    $.each(response.data.options, function(i, option) {
+                        $timeSelect.append($('<option>').val(option.value).text(option.text));
+                    });
+                }
             }
         });
     }
 
-    // Инициализация с задержкой
-    setTimeout(function() {
-        toggleDatetimeFields();
-        moveDatetimeFields();
-        console.log('Initial structure:', $('.woocommerce-shipping-methods').html());
-    }, 500);
+    function isWeekend(dateStr) {
+        var date = new Date(dateStr);
+        return date.getDay() === 0 || date.getDay() === 6;
+    }
 
-    // Обновление при выборе метода или обновлении checkout
+    toggleDeliveryDatetime();
+
     $(document.body).on('change', 'input[name="shipping_method[0]"]', function() {
-        toggleDatetimeFields();
-        moveDatetimeFields();
+        toggleDeliveryDatetime();
     });
+
+    $(document.body).on('change', 'input[name^="custom_delivery_date"], input[name^="pickup_date"]', function() {
+        var $dateInput = $(this);
+        var methodId = $dateInput.attr('name').match(/\[([^\]]*)\]/)[1];
+        updateDeliveryTimeOptions(methodId, $dateInput);
+    });
+
     $(document.body).on('updated_checkout', function() {
-        setTimeout(function() {
-            toggleDatetimeFields();
-            moveDatetimeFields();
-        }, 500);
+        toggleDeliveryDatetime();
     });
 });
